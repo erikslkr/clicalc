@@ -2,6 +2,7 @@ package de.erikslkr
 
 import TokenType._
 
+@throws[ArithmeticException]
 def evaluate(expression: Expression): BigDecimal = {
   expression match {
     case AtomicExpression(value) => value
@@ -14,7 +15,7 @@ def evaluate(expression: Expression): BigDecimal = {
         case Multiply => leftEval * rightEval
         case Divide =>
           if (rightEval == 0.0) {
-            throw RuntimeException("Error: Division by zero")
+            throw new ArithmeticException("Error: Division by zero")
           }
           leftEval / rightEval
       }

@@ -1,6 +1,7 @@
 package de.erikslkr
 
-import TokenType._
+import TokenType.*
+import error.SyntaxError
 
 object TokenType extends Enumeration {
   type TokenType = Value
@@ -24,14 +25,23 @@ class Tokenizer(input: String) {
     index += 1
   }
 
+  @throws[SyntaxError]
   private def number(): String = {
     val start = index
-    while (currentChar.isDigit) {
+    var pastDecimalPoint = false
+    while (currentChar.isDigit || currentChar == '.') {
+      if (currentChar == '.') {
+        if (pastDecimalPoint) {
+          throw new SyntaxError("Unexpected character: '.'")
+        }
+        pastDecimalPoint = true
+      }
       advance()
     }
     input.substring(start, index)
   }
 
+  @throws[SyntaxError]
   def tokenize(): List[Token] = {
     var tokens = List[Token]()
     while (index < input.length) {
@@ -43,8 +53,8 @@ class Tokenizer(input: String) {
         case '/' => tokens :+= Token(Divide); advance()
         case '(' => tokens :+= Token(LParen); advance()
         case ')' => tokens :+= Token(RParen); advance()
-        case char if char.isDigit => tokens :+= Token(Number, Some(number()))
-        case _ => throw RuntimeException(s"Illegal character: $currentChar")
+        case char if char.isDigit || char == '.' => tokens :+= Token(Number, Some(number()))
+        case _ => throw new SyntaxError(s"Illegal character: $currentChar")
       }
     }
     tokens :+= Token(EOF)

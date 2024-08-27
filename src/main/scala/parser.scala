@@ -1,6 +1,7 @@
 package de.erikslkr
 
-import TokenType._
+import TokenType.*
+import error.SyntaxError
 
 sealed trait Expression
 
@@ -18,10 +19,12 @@ class Parser(tokens: List[Token]) {
     index += 1
   }
 
+  @throws[SyntaxError]
   def parse(): Expression = {
     additiveExpression()
   }
 
+  @throws[SyntaxError]
   private def additiveExpression(): Expression = {
     var expression = multiplicativeExpression()
     while (currentToken.tokenType == Plus || currentToken.tokenType == Minus) {
@@ -33,10 +36,15 @@ class Parser(tokens: List[Token]) {
     expression
   }
 
+  @throws[SyntaxError]
   private def multiplicativeExpression(): Expression = {
     var expression = atomicExpression()
-    while (currentToken.tokenType == Multiply || currentToken.tokenType == Divide) {
-      val operator = currentToken.tokenType
+    while (currentToken.tokenType == Multiply || currentToken.tokenType == Divide || currentToken.tokenType == LParen) {
+      val operator = if (currentToken.tokenType == LParen) {
+        Multiply
+      } else {
+        currentToken.tokenType
+      }
       advance()
       val right = atomicExpression()
       expression = BinaryExpression(expression, operator, right)
@@ -44,6 +52,7 @@ class Parser(tokens: List[Token]) {
     expression
   }
 
+  @throws[SyntaxError]
   private def atomicExpression(): Expression = {
     currentToken.tokenType match {
       case Number =>
@@ -54,13 +63,13 @@ class Parser(tokens: List[Token]) {
         advance()
         val expression = additiveExpression()
         if (currentToken.tokenType != RParen) {
-          throw RuntimeException("Unmatched opening parenthesis")
+          throw new SyntaxError("Unmatched opening parenthesis")
         }
         advance()
         expression
       case RParen =>
-        throw RuntimeException("Unmatched closing parenthesis")
-      case _ => throw RuntimeException(s"Unexpected token: ${currentToken.tokenType}")
+        throw new SyntaxError("Unmatched closing parenthesis")
+      case _ => throw new SyntaxError(s"Unexpected token: ${currentToken.tokenType}")
     }
   }
 }
